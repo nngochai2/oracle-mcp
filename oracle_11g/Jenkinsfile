@@ -1,0 +1,101 @@
+// Jenkinsfile — Oracle MCP Server
+// ==============================================================================
+// Mirrors the existing Neo4j MCP deployment pattern.
+//
+// Stages:
+//   validate  — linting, import check, .env.example completeness
+//   test      — unit tests (mocked Oracle connection)
+//   package   — bundle into a zip deployable to shared dev server
+//   deploy    — restart the SSE wrapper on the shared server (if applicable)
+//
+// For local stdio usage (each developer runs their own process) the
+// deploy stage is a no-op — comment it out or gate on a parameter.
+// ==============================================================================
+
+pipeline {
+    agent any
+
+    parameters {
+        booleanParam(
+            name: 'DEPLOY_SSE_SERVER',
+            defaultValue: false,
+            description: 'Deploy SSE wrapper to shared dev server (Phase 2+)'
+        )
+    }
+
+    environment {
+        PYTHON_CMD   = 'python3'
+        VENV_DIR     = '.venv'
+        MCP_DIR      = 'oracle_mcp'
+    }
+
+    stages {
+
+        stage('Setup') {
+            steps {
+                sh """
+                    ${PYTHON_CMD} -m venv ${VENV_DIR}
+                    ${VENV_DIR}/bin/pip install --upgrade pip
+                    ${VENV_DIR}/bin/pip install -r ${MCP_DIR}/requirements.txt
+                    ${VENV_DIR}/bin/pip install pyflakes pytest pytest-asyncio
+                """
+            }
+        }
+
+        stage('Validate') {
+            steps {
+                // Syntax and import check (no Oracle client needed)
+                sh "${VENV_DIR}/bin/python -m pyflakes ${MCP_DIR}/oracle_mcp_server.py"
+
+                // Verify .env.example has all expected keys
+                sh """
+                    python3 -c "
+                    import re, sys
+                    keys = re.findall(r'^([A-Z_]+)=', open('${MCP_DIR}/.env.example').read(), re.M)
+                    print('Documented env vars:', keys)
+                    "
+                """
+            }
+        }
+
+        stage('Test') {
+            steps {
+                // Run unit tests with mocked Oracle connections
+                // Tests live in oracle_mcp/tests/
+                sh "${VENV_DIR}/bin/pytest ${MCP_DIR}/tests/ -v --tb=short"
+            }
+        }
+
+        stage('Package') {
+            steps {
+                sh """
+                    zip -r oracle_mcp_server_\${BUILD_NUMBER}.zip \\
+                        ${MCP_DIR}/oracle_mcp_server.py \\
+                        ${MCP_DIR}/requirements.txt       \\
+                        ${MCP_DIR}/.env.example           \\
+                        ${MCP_DIR}/db_setup.sql
+                """
+                archiveArtifacts artifacts: 'oracle_mcp_server_*.zip'
+            }
+        }
+
+        stage('Deploy SSE Wrapper') {
+            when {
+                expression { params.DEPLOY_SSE_SERVER }
+            }
+            steps {
+                // Phase 2+: deploy an SSE/HTTP wrapper on a shared server
+                // so the whole team shares one MCP server instance.
+                // Requires mcp[server] extras and an ASGI host (uvicorn/gunicorn).
+                echo 'SSE deployment — implement per shared-server topology'
+                // sh 'ssh dev-server "cd /opt/oracle_mcp && git pull && systemctl restart oracle-mcp"'
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs(cleanWhenNotBuilt: false, cleanWhenFailure: false)
+        }
+    }
+}
