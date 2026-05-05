@@ -1,0 +1,29 @@
+{
+  // .vscode/mcp.json
+  // ==============================================================================
+  // Oracle MCP Server — VS Code / GitHub Copilot integration
+  //
+  // Commit this file to the repository so all developers pick up the
+  // server configuration automatically.
+  //
+  // Developers must:
+  //   1. Install Oracle Instant Client on their machine
+  //   2. Create oracle_mcp/.env from oracle_mcp/.env.example
+  //   3. Populate ORACLE_PASSWORD (never committed to Git)
+  //   4. pip install -r oracle_mcp/requirements.txt
+  //
+  // The server runs as a local stdio process — no network port required.
+  // ==============================================================================
+
+  "servers": {
+    "oracle-schema": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["oracle_mcp/oracle_mcp_server.py"],
+      "env": {
+        // Individual secrets come from the developer's .env file (loaded
+        // by python-dotenv at startup).  No secrets belong here.
+      }
+    }
+  }
+}
