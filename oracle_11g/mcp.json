@@ -18,8 +18,10 @@
   "servers": {
     "oracle-schema": {
       "type": "stdio",
-      "command": "python",
-      "args": ["oracle_mcp/oracle_mcp_server.py"],
+      "command": "${userHome}\\oracle-mcp\\oracle_11g\\.venv\\Scripts\\python.exe",
+      "args": [
+        "${userHome}\\oracle-mcp\\oracle_11g\\src\\oracle_mcp_server.py"
+      ],
       "env": {
         // Individual secrets come from the developer's .env file (loaded
         // by python-dotenv at startup).  No secrets belong here.
