@@ -1,10 +1,11 @@
--- ─────────────────────────────────────────────────────────────────────────────
+-- ==============================================================================
 -- db_setup.sql
 -- Oracle 11g — MCP read-only user setup
 --
 -- Run as DBA (SYSDBA or a privileged account).
 -- Adjust schema names and tablespace to match your environment.
--- ─────────────────────────────────────────────────────────────────────────────
+-- ==============================================================================
+
 
 -- 1. Create the dedicated MCP read-only user
 --    Use a strong password; this user will be in .env on developer machines.
@@ -23,8 +24,8 @@ GRANT CREATE SESSION TO mcp_reader;
 GRANT SELECT ANY TABLE TO mcp_reader;               -- OR use per-schema grants below
 
 -- Preferred: explicit per-schema grants (more restrictive, recommended)
--- GRANT SELECT ON INVOICING.V_INVOICE_HEADER TO mcp_reader;
--- GRANT SELECT ON INVOICING.V_INVOICE_LINES  TO mcp_reader;
+-- GRANT SELECT ON [[SchemaName]].[[TableName]] TO mcp_reader;
+-- GRANT SELECT ON [[SchemaName]].[[ViewName]]  TO mcp_reader;
 -- ... or use a schema-level grant if supported by your DBA policy:
 -- GRANT SELECT ANY TABLE TO mcp_reader;            -- wide but bounded by ALLOWED_SCHEMAS in .env
 
